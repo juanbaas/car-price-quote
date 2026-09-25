@@ -151,6 +151,11 @@
     const anualAparte = e.seguroForma === 'contado' || e.seguroForma === 'financiado1';
     const mensualidadTipica = n > 1 && anualAparte ? tabla[1].pagoTotal : primerMes.pagoTotal;
 
+    // Seguro pagado por año (contado o 1er año financiado): cuánto apartar al mes para las renovaciones.
+    // El 1er año ya está pagado (al firmar o dentro del crédito); las renovaciones vencen en los meses 13, 25…
+    const renovaciones = anualAparte ? primas.slice(1).reduce((a, b) => a + b, 0) : 0;
+    const seguroAhorroMensual = renovaciones > 0 ? renovaciones / (12 * (primas.length - 1)) : 0;
+
     const cat = Math.pow(1 + irr(flujosCat), 12) - 1;
     const valorFinal = tabla[n - 1].valorAuto;
 
@@ -165,6 +170,7 @@
       agregadosFinanciados,
       agregadosContado,
       seguroFinanciado,
+      seguroAhorroMensual,
       montoFinanciado,
       apertura,
       primas,

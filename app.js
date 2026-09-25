@@ -148,10 +148,10 @@
       ['Mensualidad real', mxn2.format(m.total), 'total'],
     ].filter(Boolean);
 
-    const conAparte = (d.seguroForma === 'contado' || d.seguroForma === 'financiado1') && r.seguroTotal > 0;
-    const apartarSeguro = conAparte ? (r.seguroTotal - r.seguroFinanciado) / r.plazoMeses : 0;
+    const conAparte = r.seguroAhorroMensual > 0;
+    const primerAnio = d.seguroForma === 'contado' ? 'lo pagas al firmar' : 'va dentro del crédito';
     const notaMensualidad = conAparte
-      ? `El seguro se paga aparte una vez al año. Si apartas dinero para él, tu gasto mensual real es de unos ${$(m.total + apartarSeguro)}.`
+      ? `El seguro no está en la mensualidad: el 1er año ${primerAnio} y luego renuevas de contado cada año. Para tener listas las renovaciones, aparta unos ${$(r.seguroAhorroMensual)} al mes (${$(m.total + r.seguroAhorroMensual)} en total).`
       : '';
 
     const desembolso = [
@@ -178,8 +178,8 @@
     ].filter(Boolean);
 
     const tarjetas = [
-      ['Mensualidad real', $(m.total), conAparte ? `+ ${$(apartarSeguro)}/mes para el seguro` : ''],
-      ['Pagas al firmar', $(r.desembolso.total), ''],
+      ['Mensualidad real', $(m.total), conAparte ? `Sin seguro. Aparta ${$(r.seguroAhorroMensual)}/mes para renovarlo cada año` : ''],
+      ['Pagas al firmar', $(r.desembolso.total), r.desembolso.seguro ? `Incluye ${$(r.desembolso.seguro)} del 1er año de seguro` : ''],
       ['Costo total', $(t.costoTotal), ''],
       ['Costo del crédito', $(t.sobreprecio), `${pct(t.sobreprecioPct, 0)} más que de contado, sin contar seguro`],
       ['CAT estimado (sin IVA)', pct(r.cat * 100), ''],
@@ -287,7 +287,7 @@
         <button type="button" data-accion="compartir">Compartir</button>
       </div>
       ${d.auto ? `<p class="auto-desc">${esc(d.auto)} · ${esc(k.nombreInst)}</p>` : ''}
-      <div class="tarjetas">${k.tarjetas.map(([t, v, x], i) => `<div class="tarjeta ${i ? '' : 'principal'}"><span>${t}</span><strong>${v}</strong>${x ? `<em>${x}</em>` : ''}</div>`).join('')}</div>
+      <div class="tarjetas">${k.tarjetas.map(([t, v, x], i) => `<div class="tarjeta ${i ? '' : 'principal'}"><span>${t}</span><strong>${v}</strong>${x ? `<em class="${i === 3 ? '' : 'neutro'}">${x}</em>` : ''}</div>`).join('')}</div>
       <ul class="alertas">${k.alertas.map(([t, m]) => `<li class="alerta ${t}">${esc(m)}</li>`).join('')}</ul>
 
       <div class="columnas">
