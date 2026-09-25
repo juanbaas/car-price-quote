@@ -25,14 +25,24 @@
     <form id="form" autocomplete="off">
       <fieldset>
         <legend>El auto</legend>
+        <label>Descripción <input type="text" name="auto" maxlength="80" placeholder="Ej. MG5 Style 2025, 25,000 km"></label>
         <label>Precio de contado <input type="number" inputmode="decimal" name="precio" min="0" step="1000" required></label>
         <label>Enganche ($) <input type="number" inputmode="decimal" name="enganche" min="0" step="1000">
           <small id="enganchePct"></small></label>
+        <label>Descuento o bono del vendedor ($) <input type="number" inputmode="decimal" name="descuento" min="0" step="500"></label>
+        <label>Tu auto a cuenta del enganche ($) <input type="number" inputmode="decimal" name="autoACuenta" min="0" step="1000"></label>
         <label>Depreciación anual estimada (%) <input type="number" inputmode="decimal" name="depreciacionAnualPct" min="0" max="60" step="1"></label>
       </fieldset>
 
       <fieldset>
         <legend>Crédito</legend>
+        <label>Institución
+          <select name="institucion" id="institucion"></select></label>
+        <p class="nota" id="notaInstitucion"></p>
+        <div class="fila-botones">
+          <button type="button" id="guardarInst" class="chico">Guardar como cotización propia</button>
+          <button type="button" id="borrarInst" class="chico" hidden>Eliminar</button>
+        </div>
         <label>Plazo
           <select name="plazoMeses">
             <option value="12">12 meses</option><option value="24">24 meses</option>
@@ -61,12 +71,21 @@
           <select name="seguroForma">
             <option value="contado">De contado cada año</option>
             <option value="mensual">Prorrateado en la mensualidad (sin intereses)</option>
+            <option value="financiado1">1er año financiado, luego de contado</option>
             <option value="financiado">Multianual financiado (genera intereses)</option>
           </select></label>
         <label>La prima baja cada año (%) <input type="number" inputmode="decimal" name="seguroBajaAnualPct" min="0" max="50" step="1"></label>
         <label>Seguro de vida / desempleo (mensual) <input type="number" inputmode="decimal" name="seguroVidaMensual" min="0" step="10"></label>
         <label>Otros cargos mensuales (GPS, membresías) <input type="number" inputmode="decimal" name="otrosMensual" min="0" step="10"></label>
         <label>Gastos iniciales (placas, tenencia, trámites) <input type="number" inputmode="decimal" name="gastosIniciales" min="0" step="100"></label>
+      </fieldset>
+
+      <fieldset>
+        <legend>Agregados y equipamiento</legend>
+        <p class="nota">Accesorios, garantía extendida, etc. Si lo financias, pagas intereses sobre él.</p>
+        <div id="agregados"></div>
+        <div class="chips" id="chipsAgregados"></div>
+        <button type="button" id="nuevoAgregado" class="chico">+ Otro agregado</button>
       </fieldset>
 
       <fieldset>
@@ -79,7 +98,7 @@
         <button type="button" id="ejemplo">Cargar ejemplo MG5 2025</button>
         <button type="button" id="instalar" hidden>Instalar app</button>
         <button type="button" id="compartir">Compartir</button>
-        <button type="button" id="imprimir">Imprimir / PDF</button>
+        <button type="button" id="pdf">Exportar PDF</button>
       </div>
     </form>
 
@@ -96,6 +115,8 @@
   </footer>
 
   <script src="calc.js"></script>
+  <script src="instituciones.js"></script>
+  <script src="pdf.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

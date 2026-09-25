@@ -1,6 +1,7 @@
 // Service worker: guarda la app para que funcione sin conexión.
-const CACHE = 'cotizador-v1';
-const ARCHIVOS = ['./', 'index.html', 'styles.css', 'calc.js', 'app.js', 'manifest.webmanifest',
+const CACHE = 'cotizador-v2';
+const ARCHIVOS = ['./', 'index.html', 'styles.css', 'calc.js', 'instituciones.js', 'pdf.js', 'app.js',
+  'vendor/jspdf.umd.min.js', 'vendor/jspdf.plugin.autotable.min.js', 'manifest.webmanifest',
   'icons/icon-192.png', 'icons/icon-512.png', 'icons/maskable-512.png', 'icons/apple-touch-icon.png'];
 
 self.addEventListener('install', (e) => {

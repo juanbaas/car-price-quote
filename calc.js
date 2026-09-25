@@ -19,13 +19,16 @@
     aperturaPct: 2.5, // % del monto financiado, sin IVA
     aperturaForma: 'contado', // 'contado' | 'financiada'
     seguroAnual: 14000,
-    seguroForma: 'contado', // 'contado' | 'mensual' | 'financiado'
+    seguroForma: 'contado', // 'contado' | 'mensual' | 'financiado' | 'financiado1'
     seguroBajaAnualPct: 5, // cuánto baja la prima cada año
     seguroVidaMensual: 0,
     otrosMensual: 0, // GPS, membresías, etc.
     gastosIniciales: 0, // placas, tenencia, trámites, gestoría
     depreciacionAnualPct: 15,
     ingresoMensual: 0,
+    descuento: 0, // bono o descuento del vendedor
+    autoACuenta: 0, // valor de tu auto actual que se toma como parte del enganche
+    agregados: [], // [{ nombre, monto, financiado }] equipamiento, garantía extendida, etc.
   };
 
   function pmt(rate, n, pv) {
@@ -59,15 +62,25 @@
     const anios = Math.ceil(n / 12);
     const ivaFactor = e.ivaIntereses ? IVA : 0;
 
-    const montoAuto = Math.max(0, e.precio - e.enganche);
-    const aperturaSinIva = (montoAuto * e.aperturaPct) / 100;
+    const precioNeto = Math.max(0, e.precio - e.descuento);
+    const engancheTotal = e.enganche + e.autoACuenta;
+    const montoAuto = Math.max(0, precioNeto - engancheTotal);
+
+    const agregados = (e.agregados || []).filter((a) => a && a.monto > 0);
+    const sumar = (lista) => lista.reduce((acc, a) => acc + a.monto, 0);
+    const agregadosFinanciados = sumar(agregados.filter((a) => a.financiado));
+    const agregadosContado = sumar(agregados.filter((a) => !a.financiado));
+
+    // La comisión se cobra sobre lo que presta la institución (auto + agregados financiados).
+    const baseApertura = montoAuto + agregadosFinanciados;
+    const aperturaSinIva = (baseApertura * e.aperturaPct) / 100;
     const apertura = aperturaSinIva * (1 + IVA);
     const primas = primasSeguro(e.seguroAnual, anios, e.seguroBajaAnualPct);
     const seguroTotal = primas.reduce((a, b) => a + b, 0);
+    const seguroFinanciado = e.seguroForma === 'financiado' ? seguroTotal : e.seguroForma === 'financiado1' ? primas[0] : 0;
 
-    let montoFinanciado = montoAuto;
+    let montoFinanciado = baseApertura + seguroFinanciado;
     if (e.aperturaForma === 'financiada') montoFinanciado += apertura;
-    if (e.seguroForma === 'financiado') montoFinanciado += seguroTotal;
 
     const r = e.tasaAnual / 100 / 12;
     let pagoCredito;
@@ -84,9 +97,7 @@
     let saldo = montoFinanciado;
     const tot = { interes: 0, iva: 0, capital: 0, seguro: 0, vida: 0, otros: 0, pagos: 0 };
     // El seguro financiado se trata como dinero recibido para que no infle el CAT.
-    const flujosCat = [
-      montoAuto - (e.aperturaForma === 'contado' ? aperturaSinIva : 0) + (e.seguroForma === 'financiado' ? seguroTotal : 0),
-    ];
+    const flujosCat = [baseApertura - (e.aperturaForma === 'contado' ? aperturaSinIva : 0) + seguroFinanciado];
     let mesesPatrimonioNegativo = 0;
 
     for (let m = 1; m <= n; m++) {
@@ -107,10 +118,12 @@
       let seguro = 0;
       if (e.seguroForma === 'mensual') seguro = primas[anioIdx] / 12;
       // Contado: la prima del año 1 va en el desembolso inicial; las siguientes al inicio de cada año.
-      if (e.seguroForma === 'contado' && m > 1 && (m - 1) % 12 === 0) seguro = primas[anioIdx];
+      // Financiado 1er año: igual, pero la primera prima ya va dentro del crédito.
+      const anualAparte = e.seguroForma === 'contado' || e.seguroForma === 'financiado1';
+      if (anualAparte && m > 1 && (m - 1) % 12 === 0) seguro = primas[anioIdx];
 
       const pagoTotal = capital + interes + iva + seguro + e.seguroVidaMensual + e.otrosMensual;
-      const valorAuto = e.precio * Math.pow(1 - e.depreciacionAnualPct / 100, m / 12);
+      const valorAuto = precioNeto * Math.pow(1 - e.depreciacionAnualPct / 100, m / 12);
       if (saldo > valorAuto) mesesPatrimonioNegativo++;
 
       tabla.push({ mes: m, capital, interes, iva, seguro, vida: e.seguroVidaMensual, otros: e.otrosMensual, pagoTotal, saldo, valorAuto });
@@ -128,12 +141,15 @@
 
     const seguroInicial = e.seguroForma === 'contado' ? primas[0] : 0;
     const aperturaInicial = e.aperturaForma === 'contado' ? apertura : 0;
-    const desembolsoInicial = e.enganche + aperturaInicial + seguroInicial + e.gastosIniciales;
+    const desembolsoInicial = e.enganche + aperturaInicial + seguroInicial + agregadosContado + e.gastosIniciales;
 
-    const seguroPagado = e.seguroForma === 'financiado' ? seguroTotal : tot.seguro + seguroInicial;
-    const costoTotal = desembolsoInicial + tot.pagos;
+    const seguroPagado = tot.seguro + seguroInicial + seguroFinanciado;
+    // Lo que realmente entregas: efectivo al firmar + pagos + el auto que dejas a cuenta.
+    const costoTotal = desembolsoInicial + tot.pagos + e.autoACuenta;
+    const precioContado = precioNeto + agregadosFinanciados + agregadosContado;
     const primerMes = tabla[0];
-    const mensualidadTipica = n > 1 && e.seguroForma === 'contado' ? tabla[1].pagoTotal : primerMes.pagoTotal;
+    const anualAparte = e.seguroForma === 'contado' || e.seguroForma === 'financiado1';
+    const mensualidadTipica = n > 1 && anualAparte ? tabla[1].pagoTotal : primerMes.pagoTotal;
 
     const cat = Math.pow(1 + irr(flujosCat), 12) - 1;
     const valorFinal = tabla[n - 1].valorAuto;
@@ -141,8 +157,14 @@
     return {
       entrada: e,
       plazoMeses: n,
-      enganchePct: e.precio > 0 ? (e.enganche / e.precio) * 100 : 0,
+      precioNeto,
+      engancheTotal,
+      enganchePct: precioNeto > 0 ? (engancheTotal / precioNeto) * 100 : 0,
       montoAuto,
+      agregados,
+      agregadosFinanciados,
+      agregadosContado,
+      seguroFinanciado,
       montoFinanciado,
       apertura,
       primas,
@@ -159,6 +181,8 @@
       },
       desembolso: {
         enganche: e.enganche,
+        autoACuenta: e.autoACuenta,
+        agregados: agregadosContado,
         apertura: aperturaInicial,
         seguro: seguroInicial,
         gastos: e.gastosIniciales,
@@ -172,9 +196,13 @@
         vida: tot.vida,
         otros: tot.otros,
         gastosIniciales: e.gastosIniciales,
+        agregados: agregadosFinanciados + agregadosContado,
+        precioContado,
         costoTotal,
-        sobreprecio: costoTotal - e.precio,
-        sobreprecioPct: e.precio > 0 ? ((costoTotal - e.precio) / e.precio) * 100 : 0,
+        // Costo del crédito: lo que pagas de más por financiarte. El seguro de auto, placas y trámites
+        // se pagarían igual comprando de contado, así que no cuentan.
+        sobreprecio: costoTotal - precioContado - seguroPagado - e.gastosIniciales,
+        sobreprecioPct: precioContado > 0 ? ((costoTotal - precioContado - seguroPagado - e.gastosIniciales) / precioContado) * 100 : 0,
       },
       cat,
       mesesPatrimonioNegativo,
@@ -194,5 +222,20 @@
     return { porTasa, plazos };
   }
 
-  return { IVA, DEFAULTS, pmt, irr, cotizar, escenarios };
+  // Cotiza el mismo auto con cada institución y revisa si cumples sus requisitos.
+  function compararInstituciones(entrada, instituciones) {
+    const base = Object.assign({}, DEFAULTS, entrada);
+    return instituciones
+      .map((inst) => {
+        const plazo = Math.min(base.plazoMeses, inst.plazoMax || base.plazoMeses);
+        const r = cotizar({ ...base, tasaAnual: inst.tasaAnual, tipoTasa: inst.tipoTasa, aperturaPct: inst.aperturaPct, plazoMeses: plazo });
+        const avisos = [];
+        if (inst.engancheMinPct && r.enganchePct + 1e-9 < inst.engancheMinPct) avisos.push(`Pide ${inst.engancheMinPct}% de enganche mínimo`);
+        if (inst.plazoMax && base.plazoMeses > inst.plazoMax) avisos.push(`Plazo máximo ${inst.plazoMax} meses`);
+        return { inst, plazo, r, avisos };
+      })
+      .sort((a, b) => a.r.totales.costoTotal - b.r.totales.costoTotal);
+  }
+
+  return { IVA, DEFAULTS, pmt, irr, cotizar, escenarios, compararInstituciones };
 });
