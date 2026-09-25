@@ -1,0 +1,17 @@
+{
+  "name": "Cotizador de Crédito Automotriz",
+  "short_name": "Cotizador Auto",
+  "description": "Calcula lo que realmente pagarás por un auto a crédito: intereses, IVA, seguro y comisiones.",
+  "lang": "es-MX",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f6f7f9",
+  "theme_color": "#1f5fbf",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "icons/maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

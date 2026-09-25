@@ -1,0 +1,9 @@
+{
+  "name": "car-price-quote",
+  "private": true,
+  "description": "Cotizador de crédito automotriz (PWA)",
+  "scripts": {
+    "test": "node --test test/calc.test.js",
+    "start": "npx --yes serve -l 8080 ."
+  }
+}
