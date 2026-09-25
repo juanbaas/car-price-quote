@@ -88,3 +88,16 @@ test('el costo del crédito no incluye el seguro de auto ni gastos iniciales', (
   cerca(sin.totales.sobreprecio, con.totales.sobreprecio, 0.01);
   cerca(sin.totales.sobreprecio, sin.totales.intereses + sin.totales.ivaIntereses + sin.totales.apertura, 0.5);
 });
+
+test('seguro de contado: no entra al crédito y el ahorro sugerido solo cubre renovaciones', () => {
+  const r = C.cotizar({});
+  cerca(r.montoFinanciado, 179000, 0.01);
+  cerca(r.seguroFinanciado, 0);
+  cerca(r.desembolso.seguro, 14000, 0.01);
+  cerca(r.mensualidad.seguro, 0);
+  // Años 2 a 5 (el 1er año ya se pagó al firmar), apartados durante 48 meses.
+  const renov = 14000 * (0.95 + 0.95 ** 2 + 0.95 ** 3 + 0.95 ** 4);
+  cerca(r.seguroAhorroMensual, renov / 48, 0.01);
+  cerca(C.cotizar({ seguroForma: 'mensual' }).seguroAhorroMensual, 0);
+  cerca(C.cotizar({ seguroForma: 'financiado' }).seguroAhorroMensual, 0);
+});

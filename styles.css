@@ -111,6 +111,7 @@ section, details {
 .tarjeta span { font-size: 0.8rem; color: var(--muted); }
 .tarjeta strong { font-size: 1.35rem; font-variant-numeric: tabular-nums; }
 .tarjeta em { font-style: normal; font-size: 0.8rem; color: var(--rojo); }
+.tarjeta em.neutro { color: var(--muted); }
 .tarjeta.principal { border-color: var(--accent); }
 .tarjeta.principal strong { color: var(--accent); }
 
